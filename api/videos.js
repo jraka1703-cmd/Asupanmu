@@ -1,32 +1,41 @@
 export default async function handler(req, res) {
+  const VIDARA_API_KEY = process.env.VIDARA_API_KEY;
+  const BYSE_API_KEY = process.env.BYSE_API_KEY;
+
   const page = Number(req.query.page || 1);
 
   try {
     const [vidaraRes, byseRes] = await Promise.allSettled([
       fetch(
-        `https://api.vidara.so/v1/video/list?api_key=${process.env.VIDARA_API_KEY}&page=${page}`
+        `https://api.vidara.so/v1/video/list?api_key=${VIDARA_API_KEY}&page=${page}`
       ),
+
       fetch(
-        `https://api.byse.sx/file/list?key=${process.env.BYSE_API_KEY}&page=${page}&public=1`
+        `https://api.byse.sx/file/list?key=${BYSE_API_KEY}&page=${page}&public=1`
       )
     ]);
 
     let vidaraVideos = [];
     let byseVideos = [];
 
+    // ===================
     // VIDARA
-    if (vidaraRes.status === "fulfilled") {
-      const vidaraData = await vidaraRes.value.json();
+    // ===================
 
-      const list =
-        vidaraData?.result?.videos ||
-        vidaraData?.videos ||
+    if (
+      vidaraRes.status === "fulfilled" &&
+      vidaraRes.value.ok
+    ) {
+      const data = await vidaraRes.value.json();
+
+      const videos =
+        data?.result?.videos ||
+        data?.videos ||
         [];
 
-      vidaraVideos = list.map((video) => ({
+      vidaraVideos = videos.map(video => ({
         id:
           video.file_code ||
-          video.code ||
           video.id,
 
         source: "VIDARA",
@@ -38,36 +47,43 @@ export default async function handler(req, res) {
 
         thumbnail:
           video.thumbnail ||
-          video.poster ||
           "",
 
         url:
           video.url ||
-          video.link ||
           (video.file_code
             ? `https://vidara.so/v/${video.file_code}`
             : null),
 
-        views: Number(video.views || 0),
+        views: Number(
+          video.views || 0
+        ),
 
         uploaded:
           video.uploaded ||
-          video.created_at ||
           null
       }));
     }
 
+    // ===================
     // BYSE
-    if (byseRes.status === "fulfilled") {
-      const byseData = await byseRes.value.json();
+    // ===================
 
-      const list =
-        byseData?.result?.files ||
-        byseData?.files ||
+    if (
+      byseRes.status === "fulfilled" &&
+      byseRes.value.ok
+    ) {
+      const data = await byseRes.value.json();
+
+      const files =
+        data?.result?.files ||
+        data?.files ||
         [];
 
-      byseVideos = list.map((video) => ({
-        id: video.file_code,
+      byseVideos = files.map(video => ({
+        id:
+          video.file_code ||
+          video.id,
 
         source: "BYSE",
 
@@ -86,7 +102,9 @@ export default async function handler(req, res) {
             ? `https://byse.sx/${video.file_code}`
             : null),
 
-        views: Number(video.views || 0),
+        views: Number(
+          video.views || 0
+        ),
 
         uploaded:
           video.uploaded ||
@@ -94,25 +112,29 @@ export default async function handler(req, res) {
       }));
     }
 
-    const videos = [...vidaraVideos, ...byseVideos];
+    // gabungkan hasil
+const videos = [
+  ...vidaraVideos,
+  ...byseVideos
+];
 
-    videos.sort((a, b) => {
-      return b.views - a.views;
-    });
+// urutkan berdasarkan upload terbaru
+videos.sort((a, b) => {
+  return (
+    new Date(b.uploaded || 0) -
+    new Date(a.uploaded || 0)
+  );
+});
 
-    res.status(200).json({
-      success: true,
-      page,
-      total: videos.length,
-      videos
-    });
+// cache
+res.setHeader(
+  "Cache-Control",
+  "s-maxage=300, stale-while-revalidate=600"
+);
 
-  } catch (error) {
-    console.error(error);
-
-    res.status(500).json({
-      success: false,
-      message: "Failed to load videos"
-    });
-  }
-}
+res.status(200).json({
+  page,
+  total: videos.length,
+  videos,
+  hasMore: videos.length > 0
+});
