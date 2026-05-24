@@ -112,18 +112,23 @@ export default async function handler(req, res) {
       }));
     }
 
-    // gabungkan hasil
+// gabungkan hasil
 const videos = [
   ...vidaraVideos,
   ...byseVideos
 ];
 
-// urutkan berdasarkan upload terbaru
+// urutkan upload terbaru
 videos.sort((a, b) => {
-  return (
-    new Date(b.uploaded || 0) -
-    new Date(a.uploaded || 0)
-  );
+  const dateA = a.uploaded
+    ? new Date(a.uploaded).getTime()
+    : 0;
+
+  const dateB = b.uploaded
+    ? new Date(b.uploaded).getTime()
+    : 0;
+
+  return dateB - dateA;
 });
 
 // cache
