@@ -20,53 +20,48 @@ export default async function handler(req, res) {
         const data = await vidaraRes.json();
 
         const vidaraVideos =
-          data?.result?.videos ||
-          data?.videos ||
-          [];
+  data?.result?.videos ||
+  data?.videos ||
+  [];
 
-        videos.push(
-          ...vidaraVideos.map(video => ({
-            id:
-              video.file_code ||
-              video.id,
+videos.push(
+  ...vidaraVideos.map(video => ({
+    id:
+      video.file_code ||
+      video.code ||
+      video.id,
 
-            source: "VIDARA",
+    source: "VIDARA",
 
-            title:
-              video.title ||
-              video.name ||
-              "Untitled",
+    title:
+      video.title ||
+      video.name ||
+      "Untitled",
 
-            thumbnail:
-              video.thumbnail ||
-              video.splash_img ||
-              "",
+    thumbnail:
+      video.thumbnail ||
+      video.splash_img ||
+      "",
 
-            // link video
-            url:
-              video.link ||
-              video.url ||
-              (video.file_code
-                ? `https://vidara.so/v/${video.file_code}`
-                : ""),
+    // ambil link asli dari API lebih dulu
+    url:
+      video.link ||
+      video.url ||
+      (video.file_code
+        ? `https://vidara.so/v/${video.file_code}`
+        : video.code
+        ? `https://vidara.so/v/${video.code}`
+        : ""),
 
-            views:
-              Number(video.views || 0),
+    views:
+      Number(video.views || 0),
 
-            uploaded:
-              video.uploaded ||
-              video.created_at ||
-              0
-          }))
-        );
-      }
-
-    } catch (e) {
-      console.log("VIDARA ERROR:", e);
-    }
-
-
-    // =========================
+    uploaded:
+      video.uploaded ||
+      video.created_at ||
+      0
+  }))
+);    // =========================
     // BYSE
     // =========================
 
