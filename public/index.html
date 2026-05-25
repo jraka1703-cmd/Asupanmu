@@ -100,22 +100,65 @@ function triggerPopunder() {
 
 // 🔥 Load videos
 async function loadVideos() {
+const API = "/api/videos";
+
+let currentPage = 1;
+let loading = false;
+let hasMore = true;
+
+let videosGlobal = [];
+let videoIds = new Set(); // cegah duplikat
+
+async function loadVideos() {
+
+    if (loading || !hasMore) return;
+
+    loading = true;
+
     try {
-        const res = await fetch("/api/videos");
+
+        const res = await fetch(
+            `${API}?page=${currentPage}`
+        );
+
         const data = await res.json();
 
-        // ambil array videos dari API
-        allVideos = data.videos || [];
-        videosGlobal = allVideos;
+        const videos = data.videos || [];
 
-        render(allVideos);
+        // hapus video duplikat
+        const uniqueVideos = videos.filter(v => {
 
-        document.getElementById("loading").style.display = "none";
+            // pakai id, kalau kosong pakai link
+            const uniqueId = v.id || v.link;
 
-    } catch (e) {
-        document.getElementById("loading").innerText = "Gagal load data";
-        console.log(e);
+            if (videoIds.has(uniqueId)) {
+                return false;
+            }
+
+            videoIds.add(uniqueId);
+            return true;
+        });
+
+        videosGlobal.push(...uniqueVideos);
+
+        render(uniqueVideos);
+
+        hasMore = data.hasMore;
+
+        currentPage++;
+
+        document.getElementById("loading").style.display="none";
+
+    } catch(err){
+
+        console.log(err);
+
+        document.getElementById("loading").innerText =
+            "Gagal load data";
+
     }
+
+    loading = false;
 }
 // 🔥 Native Ads inject (SCRIPT KAMU)
 function createNativeAd() {
@@ -164,10 +207,15 @@ function render(videos) {
 }
 
 // 🔥 Infinite scroll
-window.addEventListener('scroll', () => {
-  if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 300) {
-    loadVideos();
-  }
+window.addEventListener("scroll", () => {
+
+    if (
+        window.innerHeight + window.scrollY >=
+        document.body.offsetHeight - 300
+    ) {
+        loadVideos();
+    }
+
 });
 
 // 🔍 Search
