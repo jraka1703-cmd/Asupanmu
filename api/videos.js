@@ -2,40 +2,62 @@ export default async function handler(req, res) {
   const VIDARA_KEY = process.env.VIDARA_API_KEY;
   const BYSE_KEY = process.env.BYSE_API_KEY;
 
-  const page = Number(req.query.page || 1);
-
   try {
 
-    const [vidaraRes, byseRes] = await Promise.all([
-      fetch(
-        `https://api.vidara.so/v1/video/list?api_key=${VIDARA_KEY}&page=${page}`
-      ),
-      fetch(
-        `https://api.byse.sx/file/list?key=${BYSE_KEY}&page=${page}`
-      )
-    ]);
+    // Ambil data Vidara
+    const vidaraRes = await fetch(
+      `https://api.vidara.so/v1/video/list?api_key=${VIDARA_KEY}`
+    );
+
+    // Ambil data Byse
+    const byseRes = await fetch(
+      `https://api.byse.sx/file/list?key=${BYSE_KEY}`
+    );
 
     const vidaraData = await vidaraRes.json();
     const byseData = await byseRes.json();
 
-    // VIDARA
-    const vidaraVideos = (vidaraData?.result?.videos || [])
-      .filter(v => v.code || v.id)
-      .map(v => ({
-        title: v.title || "Tanpa Judul",
-        thumbnail: v.thumbnail || "",
-        url: `https://vidara.so/v/${v.code || v.id}`,
-        source: "Vidara"
+    // Format Vidara
+    const vidaraVideos =
+      (vidaraData?.result?.videos || []).map(v => ({
+
+        title:
+          v.title ||
+          v.name ||
+          "Video Vidara",
+
+        thumbnail:
+          v.thumbnail ||
+          v.thumb ||
+          "",
+
+        url:
+          v.code
+            ? `https://vidara.so/v/${v.code}`
+            : "#",
+
+        source: "vidara"
       }));
 
-    // BYSE
-    const byseVideos = (byseData?.result?.files || [])
-      .filter(v => v.file_code)
-      .map(v => ({
-        title: v.name || "Tanpa Judul",
-        thumbnail: v.thumbnail || "",
-        url: `https://bysezejataos.com/d/${v.file_code}`,
-        source: "BYSE"
+
+    // Format Byse
+    const byseVideos =
+      (byseData?.result?.files || []).map(v => ({
+
+        title:
+          v.name ||
+          "Video Byse",
+
+        thumbnail:
+          v.thumbnail ||
+          "",
+
+        url:
+          v.file_code
+            ? `https://bysezejataos.com/d/${v.file_code}`
+            : "#",
+
+        source: "byse"
       }));
 
 
@@ -44,15 +66,14 @@ export default async function handler(req, res) {
       ...byseVideos
     ];
 
-    res.status(200).json({
-      page,
+    return res.status(200).json({
       videos
     });
 
-  } catch (e) {
+  } catch (err) {
 
-    res.status(500).json({
-      error: e.message
+    return res.status(500).json({
+      error: err.message
     });
 
   }
