@@ -6,14 +6,22 @@ export default async function handler(req, res) {
 
   try {
     // Ambil data Vidara
-    const vidaraReq = fetch(
+    const response = await fetch(
       `https://api.vidara.so/v1/video/list?api_key=${VIDARA_API_KEY}&page=${page}`
     );
 
+    if (!response.ok) {
+      throw new Error("Gagal mengambil data VIDARA");
+    }
+
     // Ambil data BYSE
-    const byseReq = fetch(
+    const response = await fetch(
       `https://api.byse.sx/file/list?key=${BYSE_API_KEY}&page=${page}`
     );
+
+    if (!response.ok) {
+      throw new Error("Gagal mengambil data VIDARA");
+    }
 
     const [vidaraRes, byseRes] = await Promise.all([
       vidaraReq,
@@ -25,13 +33,7 @@ export default async function handler(req, res) {
 
     // Format Vidara
     const vidaraVideos =
-      vidaraData?.result?.videos?.map(v => ({
-        id: v.id,
-        title: v.title || "Tanpa Judul",
-        thumbnail: v.thumbnail,
-        link: `https://vidara.so/v/${v.slug || v.id}`,
-        source: "vidara"
-      })) || [];
+      vidaraData?.result?.videos || [];
 
     // Format BYSE
     const byseVideos =
