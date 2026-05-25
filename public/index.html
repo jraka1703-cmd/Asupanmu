@@ -110,7 +110,7 @@ async function loadVideos() {
     data.videos.forEach(video => {
         container.innerHTML += `
         <div class="card"
-        onclick="window.location.href='${video.link}'">
+        onclick="window.location.href='${v.filecode}'">
 
             <img src="${video.thumbnail}" />
 
