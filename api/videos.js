@@ -1,76 +1,39 @@
 export default async function handler(req, res) {
-  const VIDARA_API_KEY = process.env.VIDARA_API_KEY;
-  const BYSE_API_KEY = process.env.BYSE_API_KEY;
+  const API_KEY = process.env.VIDARA_API_KEY;
 
   const page = Number(req.query.page || 1);
 
   try {
-    const [vidaraRes, byseRes] = await Promise.all([
+    const response = await fetch(
+      `https://api.vidara.so/v1/video/list?api_key=${API_KEY}&page=${page}`
+    );
 
-      // API Vidara
-      fetch(
-        `https://api.vidara.so/v1/video/list?api_key=${VIDARA_API_KEY}&page=${page}`
-      ),
+    if (!response.ok) {
+      throw new Error("Gagal mengambil data VIDARA");
+    }
 
-      // API Byse
-      fetch(
-        `https://api.byse.sx/file/list?key=${BYSE_API_KEY}&page=${page}`
-      )
+    const data = await response.json();
 
-    ]);
+    const videos =
+      data?.result?.videos || [];
 
-    const vidaraJson = await vidaraRes.json();
-    const byseJson = await byseRes.json();
-
-    // Video Vidara
-    const vidaraVideos = (vidaraJson?.result?.videos || []).map(v => ({
-      id: v.video_id || "",
-      title: v.title || "Tanpa Judul",
-      thumbnail: v.thumbnail || v.thumb || "",
-      
-      // supaya tidak undefined
-      slug: v.slug || v.video_id || "",
-
-      // link asli vidara
-      link: `https://vidara.so/v/${v.slug || v.video_id}`,
-
-      source: "vidara"
-    }));
-
-
-    // Video Byse
-    const byseVideos = (byseJson?.result?.files || []).map(v => ({
-      id: v.file_code || "",
-      title: v.name || "Tanpa Judul",
-      thumbnail: v.thumbnail || "",
-
-      link: `https://bysezjtaos.com/d/${v.file_code}`,
-
-      source: "byse"
-    }));
-
-
-    const videos = [
-      ...vidaraVideos,
-      ...byseVideos
-    ];
-
+    // Cache lebih lama
     res.setHeader(
       "Cache-Control",
       "s-maxage=300, stale-while-revalidate=600"
     );
 
-    return res.status(200).json({
-      success: true,
+    res.status(200).json({
       page,
-      total: videos.length,
-      videos
+      videos,
+      hasMore: videos.length > 0
     });
 
   } catch (err) {
-    return res.status(500).json({
-      success: false,
-      error: err.message
+    console.error(err);
+
+    res.status(500).json({
+      error: "Gagal ambil data"
     });
   }
 }
