@@ -100,17 +100,22 @@ function triggerPopunder() {
 
 // 🔥 Load videos
 async function loadVideos() {
-  try {
-    const res = await fetch(API);
-    const data = await res.json();
+    try {
+        const res = await fetch("/api/videos");
+        const data = await res.json();
 
-    allVideos = data;
-    render(data);
+        // ambil array videos dari API
+        allVideos = data.videos || [];
+        videosGlobal = allVideos;
 
-    document.getElementById("loading").style.display = "none";
-  } catch (e) {
-    document.getElementById("loading").innerText = "Gagal load data";
-  }
+        render(allVideos);
+
+        document.getElementById("loading").style.display = "none";
+
+    } catch (e) {
+        document.getElementById("loading").innerText = "Gagal load data";
+        console.log(e);
+    }
 }
 // 🔥 Native Ads inject (SCRIPT KAMU)
 function createNativeAd() {
