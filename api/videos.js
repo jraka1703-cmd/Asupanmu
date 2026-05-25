@@ -14,11 +14,6 @@ export default async function handler(req, res) {
       )
     ]);
 
-    const response = await fetch("/api/videos");
-const data = await response.json();
-
-setVideos(data.videos || []);
-
     const vidaraData = await vidaraRes.json();
     const byseData = await byseRes.json();
 
