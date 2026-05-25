@@ -2,63 +2,53 @@ export default async function handler(req, res) {
   const VIDARA_API_KEY = process.env.VIDARA_API_KEY;
   const BYSE_API_KEY = process.env.BYSE_API_KEY;
 
-  const page = Number(req.query.page || 1);
+  const page = req.query.page || 1;
 
   try {
-    // Ambil data Vidara
-    const response = await fetch(
-      `https://api.vidara.so/v1/video/list?api_key=${VIDARA_API_KEY}&page=${page}`
-    );
-
-    if (!response.ok) {
-      throw new Error("Gagal mengambil data VIDARA");
-    }
-
-    // Ambil data BYSE
-    const response = await fetch(
-      `https://api.byse.sx/file/list?key=${BYSE_API_KEY}&page=${page}`
-    );
-
-    if (!response.ok) {
-      throw new Error("Gagal mengambil data VIDARA");
-    }
-
     const [vidaraRes, byseRes] = await Promise.all([
-      vidaraReq,
-      byseReq
+      fetch(
+        `https://api.vidara.so/v1/video/list?api_key=${VIDARA_API_KEY}&page=${page}`
+      ),
+      fetch(
+        `https://api.byse.sx/file/list?key=${BYSE_API_KEY}&page=${page}`
+      )
     ]);
 
-    const vidaraData = await response.json();
-    const byseData = await reaponse.json();
+    const response = await fetch("/api/videos");
+const data = await response.json();
 
-    // Format Vidara
+setVideos(data.videos || []);
+
+    const vidaraData = await vidaraRes.json();
+    const byseData = await byseRes.json();
+
+    console.log("VIDARA:", vidaraData);
+    console.log("BYSE:", byseData);
+
+    // Vidara
     const vidaraVideos =
-      vidaraData?.result?.videos || [];
+      (vidaraData?.result?.videos || []).map(v => ({
+        id: v.id || v.video_id,
+        title: v.title || "Tanpa Judul",
+        thumbnail: v.thumbnail || v.thumb || "",
+        link: v.url || `https://vidara.so/v/${v.slug || v.id}`,
+        source: "vidara"
+      }));
 
-    // Format BYSE
+    // BYSE
     const byseVideos =
-      byseData?.result?.files?.map(v => ({
+      (byseData?.result?.files || []).map(v => ({
         id: v.file_code,
-        title: v.title || v.name || "Tanpa Judul",
-        thumbnail: v.thumbnail,
+        title: v.name || v.title || "Tanpa Judul",
+        thumbnail: v.thumbnail || "",
         link: `https://bysezejataos.com/d/${v.file_code}`,
         source: "byse"
-      })) || [];
+      }));
 
-    // Gabungkan
-    const videos = [
-      ...vidaraVideos,
-      ...byseVideos
-    ];
-
-    // Cache
-    res.setHeader(
-      "Cache-Control",
-      "s-maxage=300, stale-while-revalidate=600"
-    );
+    const videos = [...vidaraVideos, ...byseVideos];
 
     res.status(200).json({
-      page,
+      success: true,
       total: videos.length,
       videos
     });
@@ -67,7 +57,8 @@ export default async function handler(req, res) {
     console.log(err);
 
     res.status(500).json({
-      error: "Gagal ambil data"
+      success: false,
+      error: err.message
     });
   }
 }
