@@ -100,30 +100,18 @@ function triggerPopunder() {
 
 // 🔥 Load videos
 async function loadVideos() {
-    const res = await fetch("/api/videos");
+  try {
+    const res = await fetch(API);
     const data = await res.json();
 
-    const container = document.querySelector(".container");
+    allVideos = data;
+    render(data);
 
-    container.innerHTML = "";
-
-    data.videos.forEach(video => {
-        container.innerHTML += `
-        <div class="card"
-        onclick="window.location.href='${video.filecode}'">
-
-            <img src="${video.thumbnail}" />
-
-            <div class="card-title">
-                ${video.title}
-            </div>
-
-        </div>
-        `;
-    });
+    document.getElementById("loading").style.display = "none";
+  } catch (e) {
+    document.getElementById("loading").innerText = "Gagal load data";
+  }
 }
-
-loadVideos();
 // 🔥 Native Ads inject (SCRIPT KAMU)
 function createNativeAd() {
   const ad = document.createElement('div');
