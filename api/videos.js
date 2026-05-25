@@ -2,7 +2,7 @@ export default async function handler(req, res) {
   const VIDARA_API_KEY = process.env.VIDARA_API_KEY;
   const BYSE_API_KEY = process.env.BYSE_API_KEY;
 
-  const page = req.query.page || 1;
+  const page = Number(req.query.page || 1);
 
   try {
     const [vidaraRes, byseRes] = await Promise.all([
@@ -17,40 +17,48 @@ export default async function handler(req, res) {
     const vidaraData = await vidaraRes.json();
     const byseData = await byseRes.json();
 
-    console.log("VIDARA:", vidaraData);
-    console.log("BYSE:", byseData);
-
     // Vidara
     const vidaraVideos =
       (vidaraData?.result?.videos || []).map(v => ({
-        id: v.id || v.video_id,
+        id: v.video_id || v.id,
         title: v.title || "Tanpa Judul",
-        thumbnail: v.thumbnail || v.thumb || "",
-        link: v.url || `https://vidara.so/v/${v.slug || v.id}`,
+        thumbnail:
+          v.thumbnail ||
+          v.thumb ||
+          "",
+
+        // pakai URL asli dari API jika ada
+        link:
+          v.url ||
+          `https://vidara.so/v/${v.slug || v.video_id || v.id}`,
+
         source: "vidara"
       }));
 
-    // BYSE
+    // Byse
     const byseVideos =
       (byseData?.result?.files || []).map(v => ({
         id: v.file_code,
-        title: v.name || v.title || "Tanpa Judul",
+        title: v.title || v.name || "Tanpa Judul",
         thumbnail: v.thumbnail || "",
-        link: `https://bysezejataos.com/d/${v.file_code}`,
+
+        // halaman asli Byse
+        link: `https://bysezjtaos.com/d/${v.file_code}`,
+
         source: "byse"
       }));
 
-    const videos = [...vidaraVideos, ...byseVideos];
+    const videos = [
+      ...vidaraVideos,
+      ...byseVideos
+    ];
 
     res.status(200).json({
       success: true,
-      total: videos.length,
       videos
     });
 
   } catch (err) {
-    console.log(err);
-
     res.status(500).json({
       success: false,
       error: err.message
