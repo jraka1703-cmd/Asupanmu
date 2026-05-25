@@ -1,39 +1,63 @@
 export default async function handler(req, res) {
-  const API_KEY = process.env.VIDARA_API_KEY;
+  const VIDARA_KEY = process.env.VIDARA_API_KEY;
+  const BYSE_KEY = process.env.BYSE_API_KEY;
 
   const page = Number(req.query.page || 1);
 
   try {
-    const response = await fetch(
-      `https://api.vidara.so/v1/video/list?api_key=${API_KEY}&page=${page}`
+    // Ambil Vidara
+    const vidaraReq = fetch(
+      `https://api.vidara.so/v1/video/list?api_key=${VIDARA_KEY}&page=${page}`
     );
 
-    if (!response.ok) {
-      throw new Error("Gagal mengambil data VIDARA");
-    }
+    // Ambil BYSE
+    const byseReq = fetch(
+      `https://api.byse.sx/file/list?key=${BYSE_KEY}&page=${page}`
+    );
 
-    const data = await response.json();
+    const [vidaraRes, byseRes] = await Promise.all([
+      vidaraReq,
+      byseReq
+    ]);
 
-    const videos =
-      data?.result?.videos || [];
+    const vidaraData = await vidaraRes.json();
+    const byseData = await byseRes.json();
 
-    // Cache lebih lama
+    // Format Vidara
+    const vidaraVideos = (vidaraData?.result?.videos || []).map(v => ({
+      title: v.title || "Tanpa Judul",
+      thumbnail: v.thumbnail,
+      url: `https://vidara.so/v/${v.code}`,
+      source: "Vidara"
+    }));
+
+    // Format BYSE
+    const byseVideos = (byseData?.result?.files || []).map(v => ({
+      title: v.name || "Tanpa Judul",
+      thumbnail: v.thumbnail,
+      url: `https://bysezejataos.com/d/${v.file_code}`,
+      source: "BYSE"
+    }));
+
+    // Gabungkan
+    const videos = [...vidaraVideos, ...byseVideos];
+
+    // Cache
     res.setHeader(
       "Cache-Control",
       "s-maxage=300, stale-while-revalidate=600"
     );
 
-    res.status(200).json({
+    return res.status(200).json({
       page,
       videos,
-      hasMore: videos.length > 0
+      total: videos.length
     });
 
   } catch (err) {
-    console.error(err);
-
-    res.status(500).json({
-      error: "Gagal ambil data"
+    return res.status(500).json({
+      error: "Gagal ambil video",
+      detail: err.message
     });
   }
 }
