@@ -6,67 +6,77 @@
 <title>Asupanmu</title>
 
 <style>
-body {
-  margin: 0;
-  background: #0d0d0d;
-  font-family: sans-serif;
-  color: white;
+body{
+margin:0;
+background:#0d0d0d;
+font-family:sans-serif;
+color:white;
 }
 
-.navbar {
-  position: sticky;
-  top: 0;
-  background: #0d0d0d;
-  padding: 12px;
-  z-index: 999;
+.navbar{
+position:sticky;
+top:0;
+background:#0d0d0d;
+padding:12px;
+z-index:999;
 }
 
-.title {
-  font-size: 20px;
-  font-weight: bold;
-  color: #7f5af0;
+.title{
+font-size:20px;
+font-weight:bold;
+color:#7f5af0;
 }
 
-.search {
-  width: 100%;
-  padding: 10px;
-  margin-top: 10px;
-  border-radius: 20px;
-  border: none;
-  background: #1a1a1a;
-  color: white;
+.search{
+width:100%;
+padding:10px;
+margin-top:10px;
+border-radius:20px;
+border:none;
+background:#1a1a1a;
+color:white;
+box-sizing:border-box;
 }
 
-.container {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 10px;
-  padding: 10px;
+.container{
+display:grid;
+grid-template-columns:repeat(2,1fr);
+gap:10px;
+padding:10px;
 }
 
-.card, .ad-card {
-  border-radius: 15px;
-  overflow: hidden;
-  background: #111;
-  position: relative;
+.card,.ad-card{
+border-radius:15px;
+overflow:hidden;
+background:#111;
+position:relative;
+cursor:pointer;
 }
 
-.card img {
-  width: 100%;
-  height: 200px;
-  object-fit: cover;
+.card img{
+width:100%;
+height:200px;
+object-fit:cover;
+display:block;
 }
 
-.card-title {
-  position: absolute;
-  bottom: 0;
-  padding: 10px;
-  font-size: 13px;
-  background: linear-gradient(transparent, black);
+.card-title{
+position:absolute;
+bottom:0;
+left:0;
+right:0;
+padding:10px;
+font-size:13px;
+background:linear-gradient(transparent,black);
 }
 
-.ad-card {
-  height: 200px;
+.ad-card{
+height:200px;
+}
+
+#loading{
+text-align:center;
+padding:20px;
 }
 </style>
 </head>
@@ -74,121 +84,294 @@ body {
 <body>
 
 <div class="navbar">
-  <div class="title">Asupanmu</div>
-  <input id="search" class="search" placeholder="Search video...">
+<div class="title">Asupanmu</div>
+
+<input
+id="search"
+class="search"
+placeholder="Search video..."
+>
 </div>
 
 <div id="videos" class="container"></div>
 
+<div id="loading">
+Loading...
+</div>
+
 <script>
-let videosGlobal = [];
-let page = 1;
-let loading = false;
-let hasMore = true;
 
-// 🔥 Popunder (1x saja)
-function triggerPopunder() {
-  if (!localStorage.getItem("popShown")) {
-    localStorage.setItem("popShown", "true");
+const API="/api/videos";
 
-    window.open(
-      "https://www.profitablecpmratenetwork.com/s6szeryj1j?key=67a910e3b4387aa420b25f4a4bfa41b1",
-      "_blank"
-    );
-  }
+let page=1;
+let loading=false;
+let hasMore=true;
+
+let videosGlobal=[];
+const loadedIds=new Set();
+
+
+// Popunder
+function triggerPopunder(){
+
+if(!localStorage.getItem("popShown")){
+
+localStorage.setItem(
+"popShown",
+"true"
+);
+
+window.open(
+"https://www.profitablecpmratenetwork.com/s6szeryj1j?key=67a910e3b4387aa420b25f4a4bfa41b1",
+"_blank"
+);
+
 }
 
-// 🔥 Load videos
-async function loadVideos() {
-    try {
-        const res = await fetch("/api/videos");
-        const data = await res.json();
-
-        // ambil array videos dari API
-        allVideos = data.videos || [];
-        videosGlobal = allVideos;
-
-        render(allVideos);
-
-        document.getElementById("loading").style.display = "none";
-
-    } catch (e) {
-        document.getElementById("loading").innerText = "Gagal load data";
-        console.log(e);
-    }
-}
-// 🔥 Native Ads inject (SCRIPT KAMU)
-function createNativeAd() {
-  const ad = document.createElement('div');
-  ad.className = 'ad-card';
-
-  const script = document.createElement('script');
-  script.async = true;
-  script.src = "https://pl29343712.profitablecpmratenetwork.com/d6c7cfa2fbe3ee841c92a4f50371bf35/invoke.js";
-
-  const container = document.createElement('div');
-  container.id = "container-d6c7cfa2fbe3ee841c92a4f50371bf35";
-
-  ad.appendChild(script);
-  ad.appendChild(container);
-
-  return ad;
 }
 
-// 🔥 Render video + ads
-function render(videos) {
-  const container = document.getElementById('videos');
 
-  videos.forEach((v, i) => {
+// Load videos
+async function loadVideos(){
 
-    // Native ads tiap 6 video
-    if ((videosGlobal.length + i) % 6 === 0) {
-      container.appendChild(createNativeAd());
-    }
+if(loading||!hasMore) return;
 
-    const el = document.createElement('div');
-    el.className = 'card';
+loading=true;
 
-    el.innerHTML = `
-      <img src="${v.thumbnail}" loading="lazy">
-      <div class="card-title">${v.title}</div>
-    `;
+try{
 
-    el.onclick = () => {
-      triggerPopunder();
-      window.location.href = `https://vidara.so/v/${v.filecode}`;
-    };
+const res=await fetch(
+`${API}?page=${page}`
+);
 
-    container.appendChild(el);
-  });
+const data=await res.json();
+
+const videos=data.videos||[];
+
+
+if(videos.length===0){
+
+hasMore=false;
+
+document.getElementById(
+"loading"
+).innerText="Semua video selesai";
+
+return;
+
 }
 
-// 🔥 Infinite scroll
-window.addEventListener('scroll', () => {
-  if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 300) {
-    loadVideos();
-  }
+
+// hilangkan video duplikat
+const uniqueVideos=videos.filter(v=>{
+
+const id=v.id||v.link;
+
+if(loadedIds.has(id)){
+
+return false;
+
+}
+
+loadedIds.add(id);
+
+return true;
+
 });
 
-// 🔍 Search
-document.getElementById('search').addEventListener('input', e => {
-  const q = e.target.value.toLowerCase();
 
-  const container = document.getElementById('videos');
-  container.innerHTML = "";
+videosGlobal.push(
+...uniqueVideos
+);
 
-  const filtered = videosGlobal.filter(v =>
-    v.title.toLowerCase().includes(q)
-  );
+render(uniqueVideos);
 
-  render(filtered);
+page++;
+
+}catch(err){
+
+console.log(err);
+
+document.getElementById(
+"loading"
+).innerText=
+"Gagal load data";
+
+}
+
+loading=false;
+
+}
+
+
+// Native ads
+function createNativeAd(){
+
+const ad=document.createElement(
+'div'
+);
+
+ad.className='ad-card';
+
+
+const script=
+document.createElement(
+'script'
+);
+
+script.async=true;
+
+script.src=
+"https://pl29343712.profitablecpmratenetwork.com/d6c7cfa2fbe3ee841c92a4f50371bf35/invoke.js";
+
+
+const container=
+document.createElement(
+'div'
+);
+
+container.id=
+"container-d6c7cfa2fbe3ee841c92a4f50371bf35";
+
+
+ad.appendChild(script);
+
+ad.appendChild(container);
+
+return ad;
+
+}
+
+
+// Render
+function render(videos){
+
+const container=
+document.getElementById(
+'videos'
+);
+
+
+videos.forEach((v,i)=>{
+
+
+if(
+(videosGlobal.length+i)%6===0
+){
+
+container.appendChild(
+createNativeAd()
+);
+
+}
+
+
+const el=
+document.createElement(
+'div'
+);
+
+el.className='card';
+
+
+el.innerHTML=`
+
+<img
+src="${v.thumbnail}"
+loading="lazy"
+>
+
+<div class="card-title">
+
+${v.title}
+
+</div>
+
+`;
+
+
+el.onclick=()=>{
+
+triggerPopunder();
+
+window.location.href=
+v.link;
+
+};
+
+
+container.appendChild(
+el
+);
+
 });
 
-// init
+
+}
+
+
+// Infinite scroll
+window.addEventListener(
+"scroll",
+()=>{
+
+if(
+
+window.innerHeight+
+window.scrollY>=
+document.body.offsetHeight-500
+
+){
+
 loadVideos();
+
+}
+
+}
+);
+
+
+// Search
+document
+.getElementById(
+"search"
+)
+.addEventListener(
+"input",
+e=>{
+
+const q=
+e.target.value.toLowerCase();
+
+const container=
+document.getElementById(
+"videos"
+);
+
+container.innerHTML="";
+
+const filtered=
+videosGlobal.filter(
+v=>
+
+v.title
+.toLowerCase()
+.includes(q)
+
+);
+
+render(filtered);
+
+}
+);
+
+
+// awal
+loadVideos();
+
 </script>
 
-<!-- 🔥 SOCIAL BAR (SCRIPT KAMU) -->
+
 <script src="https://pl29343713.profitablecpmratenetwork.com/9a/69/24/9a6924d62fcb5f212667f72bfbb2378f.js"></script>
 
 </body>
