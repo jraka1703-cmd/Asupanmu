@@ -28,8 +28,8 @@ export default async function handler(req, res) {
       byseReq
     ]);
 
-    const vidaraData = await vidaraRes.json();
-    const byseData = await byseRes.json();
+    const vidaraData = await response.json();
+    const byseData = await reaponse.json();
 
     // Format Vidara
     const vidaraVideos =
