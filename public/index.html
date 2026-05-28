@@ -3,9 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 <title>Asupanmu</title>
 
 <style>
+
 body{
 margin:0;
 background:#0d0d0d;
@@ -16,13 +18,13 @@ color:white;
 .navbar{
 position:sticky;
 top:0;
+z-index:999;
 background:#0d0d0d;
 padding:12px;
-z-index:999;
 }
 
 .title{
-font-size:20px;
+font-size:22px;
 font-weight:bold;
 color:#7f5af0;
 }
@@ -31,11 +33,12 @@ color:#7f5af0;
 width:100%;
 padding:10px;
 margin-top:10px;
-border-radius:20px;
 border:none;
+border-radius:20px;
 background:#1a1a1a;
 color:white;
 box-sizing:border-box;
+outline:none;
 }
 
 .container{
@@ -45,53 +48,73 @@ gap:10px;
 padding:10px;
 }
 
-.card,.ad-card{
+.card,
+.ad-card{
+background:#111;
 border-radius:15px;
 overflow:hidden;
-background:#111;
 position:relative;
 cursor:pointer;
 }
 
 .card img{
 width:100%;
-height:200px;
+height:220px;
 object-fit:cover;
 display:block;
 }
 
 .card-title{
 position:absolute;
-bottom:0;
 left:0;
 right:0;
+bottom:0;
 padding:10px;
 font-size:13px;
 background:linear-gradient(transparent,black);
 }
 
+.badge{
+position:absolute;
+top:10px;
+left:10px;
+background:#7f5af0;
+padding:4px 8px;
+font-size:11px;
+border-radius:20px;
+}
+
 .ad-card{
-height:200px;
+height:220px;
 }
 
 #loading{
 text-align:center;
 padding:20px;
+font-size:14px;
+color:#999;
 }
+
 </style>
 </head>
 
 <body>
 
 <div class="navbar">
-<div class="title">Asupanmu</div>
+
+<div class="title">
+Asupanmu
+</div>
 
 <input
+type="text"
 id="search"
 class="search"
 placeholder="Search video..."
 >
+
 </div>
+
 
 <div id="videos" class="container"></div>
 
@@ -99,22 +122,35 @@ placeholder="Search video..."
 Loading...
 </div>
 
+
+
 <script>
 
 const API="/api/videos";
 
 let page=1;
+
 let loading=false;
+
 let hasMore=true;
 
 let videosGlobal=[];
+
 const loadedIds=new Set();
 
 
-// Popunder
+
+// =====================
+// POPUNDER
+// =====================
+
 function triggerPopunder(){
 
-if(!localStorage.getItem("popShown")){
+if(
+!localStorage.getItem(
+"popShown"
+)
+){
 
 localStorage.setItem(
 "popShown",
@@ -131,43 +167,64 @@ window.open(
 }
 
 
-// Load videos
+
+// =====================
+// LOAD VIDEOS
+// =====================
+
 async function loadVideos(){
 
-if(loading||!hasMore) return;
+if(
+loading||
+!hasMore
+) return;
 
 loading=true;
 
 try{
 
-const res=await fetch(
+const res=
+await fetch(
 `${API}?page=${page}`
 );
 
-const data=await res.json();
+const data=
+await res.json();
 
-const videos=data.videos||[];
+const videos=
+data.videos||[];
 
 
+// jika data habis
 if(videos.length===0){
 
 hasMore=false;
 
 document.getElementById(
 "loading"
-).innerText="Semua video selesai";
+).innerText=
+"Semua video selesai";
 
 return;
 
 }
 
 
-// hilangkan video duplikat
-const uniqueVideos=videos.filter(v=>{
 
-const id=v.id||v.link;
+// =====================
+// HAPUS DUPLIKAT
+// =====================
 
-if(loadedIds.has(id)){
+const uniqueVideos=
+videos.filter(v=>{
+
+const id=
+v.id||
+v.link;
+
+if(
+loadedIds.has(id)
+){
 
 return false;
 
@@ -180,9 +237,11 @@ return true;
 });
 
 
+
 videosGlobal.push(
 ...uniqueVideos
 );
+
 
 render(uniqueVideos);
 
@@ -204,19 +263,25 @@ loading=false;
 }
 
 
-// Native ads
+
+// =====================
+// NATIVE ADS
+// =====================
+
 function createNativeAd(){
 
-const ad=document.createElement(
-'div'
+const ad=
+document.createElement(
+"div"
 );
 
-ad.className='ad-card';
+ad.className=
+"ad-card";
 
 
 const script=
 document.createElement(
-'script'
+"script"
 );
 
 script.async=true;
@@ -227,7 +292,7 @@ script.src=
 
 const container=
 document.createElement(
-'div'
+"div"
 );
 
 container.id=
@@ -243,18 +308,23 @@ return ad;
 }
 
 
-// Render
+
+// =====================
+// RENDER VIDEO
+// =====================
+
 function render(videos){
 
 const container=
 document.getElementById(
-'videos'
+"videos"
 );
 
 
 videos.forEach((v,i)=>{
 
 
+// native ads tiap 6 video
 if(
 (videosGlobal.length+i)%6===0
 ){
@@ -268,13 +338,20 @@ createNativeAd()
 
 const el=
 document.createElement(
-'div'
+"div"
 );
 
-el.className='card';
+el.className=
+"card";
 
 
 el.innerHTML=`
+
+<div class="badge">
+
+${v.source||"VIDEO"}
+
+</div>
 
 <img
 src="${v.thumbnail}"
@@ -290,12 +367,21 @@ ${v.title}
 `;
 
 
+
+// =====================
+// KLIK KE HALAMAN ASLI
+// =====================
+
 el.onclick=()=>{
 
 triggerPopunder();
 
+if(v.link){
+
 window.location.href=
 v.link;
+
+}
 
 };
 
@@ -306,11 +392,14 @@ el
 
 });
 
-
 }
 
 
-// Infinite scroll
+
+// =====================
+// INFINITE SCROLL
+// =====================
+
 window.addEventListener(
 "scroll",
 ()=>{
@@ -331,7 +420,11 @@ loadVideos();
 );
 
 
-// Search
+
+// =====================
+// SEARCH
+// =====================
+
 document
 .getElementById(
 "search"
@@ -350,15 +443,16 @@ document.getElementById(
 
 container.innerHTML="";
 
-const filtered=
-videosGlobal.filter(
-v=>
 
-v.title
+const filtered=
+videosGlobal.filter(v=>
+
+(v.title||"")
 .toLowerCase()
 .includes(q)
 
 );
+
 
 render(filtered);
 
@@ -366,13 +460,21 @@ render(filtered);
 );
 
 
-// awal
+
+// =====================
+// INIT
+// =====================
+
 loadVideos();
 
 </script>
 
 
+
+<!-- SOCIAL BAR -->
+
 <script src="https://pl29343713.profitablecpmratenetwork.com/9a/69/24/9a6924d62fcb5f212667f72bfbb2378f.js"></script>
+
 
 </body>
 </html>
