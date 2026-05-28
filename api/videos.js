@@ -103,45 +103,45 @@ source:
 
 
 
-// =================
+/// =================
 // BYSE
 // =================
 
-if(
-responses[1]?.status==="fulfilled"
+if (
+responses[1]?.status === "fulfilled"
 ){
 
-const data=
+const data =
 await responses[1].value.json();
 
-const byseVideos=
-data?.result?.files||
-data?.files||
+const byseVideos =
+data?.result?.files ||
+data?.files ||
 [];
 
 videos.push(
 
-...byseVideos.map(v=>({
+...byseVideos.map(v => ({
 
 id:
-v.file_code||
+v.file_code ||
 v.id,
 
 title:
-v.title||
-v.name||
+v.title ||
+v.name ||
 "Tanpa Judul",
 
 thumbnail:
-v.thumbnail||
+v.thumbnail ||
 "",
 
+// PAKSA LINK KE BYSEZEJATAOS
 link:
-v.link||
 `https://bysezejataos.com/d/${v.file_code}`,
 
 uploaded:
-v.uploaded||
+v.uploaded ||
 "",
 
 source:
@@ -152,8 +152,6 @@ source:
 );
 
 }
-
-
 
 // =================
 // API tambahan
