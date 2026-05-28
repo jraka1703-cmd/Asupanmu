@@ -138,7 +138,6 @@ v.thumbnail||
 
 link:
 v.link||
-v.url||
 `https://bysezejataos.com/d/${v.file_code}`,
 
 uploaded:
